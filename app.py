@@ -26,6 +26,21 @@ hide_st_style = """
             """
 
 
+def slider_group(groups):
+    adjusted_data = []
+    sliders = {}
+    columns = st.columns(len(groups))
+    for idx, i in enumerate(groups):
+        min_value = i[0]
+        max_value = i[1]
+        key = f'member{str(idx)}'
+        with columns[idx]:
+            sliders[f'slider_group_{key}'] = svs.vertical_slider(key=key, default_value=i[2], step=1, min_value=min_value, max_value=max_value)
+            if sliders[f'slider_group_{key}'] == None:
+                sliders[f'slider_group_{key}']  = i[2]
+            adjusted_data.append((i[0],i[1],sliders[f'slider_group_{key}'] ))
+    return adjusted_data        
+
 
 groups = [(0,200,100),
             (0,200,150),
@@ -36,19 +51,7 @@ groups = [(0,200,100),
             (0,200,86),
             (0,200,150),
             (0,200,150),
-            (0,200,25),
-            ]
+            (0,200,25)]
 
-adjusted_data = []
-sliders = {}
-columns = st.columns(len(groups))
-for idx, i in enumerate(groups):
-    min_value = i[0]
-    max_value = i[1]
-    key = f'member{str(idx)}'
-    with columns[idx]:
-        sliders[f'slider_group_{key}'] = svs.vertical_slider(key=key, default_value=i[2], step=1, min_value=min_value, max_value=max_value)
-        if sliders[f'slider_group_{key}'] == None:
-            sliders[f'slider_group_{key}']  = i[1]
-        adjusted_data.append((i[0],sliders[f'slider_group_{key}'] ))
-
+sliders_values=slider_group(groups)
+st.write(sliders_values)
