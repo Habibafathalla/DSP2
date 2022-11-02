@@ -12,6 +12,12 @@ from math import ceil,floor
 import plotly.express as px
 from plotly.express import colors
 import matplotlib.pyplot as plt
+from glob import glob
+import librosa 
+import librosa.display
+import IPython.display as ipd
+import matplotlib.pylab as plt 
+
 
 st.set_page_config(page_title="equalizer", page_icon=":bar_chart:",layout="wide")
 
@@ -25,6 +31,16 @@ hide_st_style = """
             </style>
             """
 
+# Initialization of session state
+if 'sliderValues' not in st.session_state:
+    st.session_state['sliderValues'] = []
+
+if 'groups' not in st.session_state:
+    st.session_state['groups'] = []
+if 'audio' not in st.session_state:
+    st.session_state['audio'] = []
+if 'sampleRare' not in st.session_state:
+    st.session_state['sampleRare'] = []
 
 def slider_group(groups):
     adjusted_data = []
@@ -42,7 +58,7 @@ def slider_group(groups):
     return adjusted_data        
 
 
-groups = [(0,200,100),
+st.session_state['groups'] = [(0,200,100),
             (0,200,150),
             (0,200,75),
             (0,200,25),
@@ -53,5 +69,15 @@ groups = [(0,200,100),
             (0,200,150),
             (0,200,25)]
 
-sliders_values=slider_group(groups)
-st.write(sliders_values)
+upload_file= st.file_uploader("")
+if upload_file:
+    st.session_state['audio'],st.session_state['sampleRare']=librosa.load(upload_file)
+    #play audio
+    st.audio(upload_file, format='audio/wav')
+    fig=px.line((st.session_state['audio']))
+    st.plotly_chart(fig, use_container_width=True)
+
+
+
+st.session_state['sliderValues']=slider_group(st.session_state['groups'])
+# st.write(st.session_state)
