@@ -16,7 +16,15 @@ from glob import glob
 import librosa 
 import librosa.display
 import IPython.display as ipd
-import matplotlib.pylab as plt 
+from numpy import fft
+import xlsxwriter
+import io
+from io import BytesIO 
+from scipy.signal import find_peaks
+from scipy.io.wavfile import write
+
+
+
 
 
 st.set_page_config(page_title="equalizer", page_icon=":bar_chart:",layout="wide")
@@ -38,9 +46,17 @@ if 'sliderValues' not in st.session_state:
 if 'groups' not in st.session_state:
     st.session_state['groups'] = []
 if 'audio' not in st.session_state:
-    st.session_state['audio'] = []
+    st.session_state['audio'] =[]
 if 'sampleRare' not in st.session_state:
     st.session_state['sampleRare'] = []
+if 'spectrum' not in st.session_state:
+    st.session_state['spectrum'] = []
+if 'fft_frequency' not in st.session_state:
+    st.session_state['fft_frequency'] = []
+if 'factor' not in st.session_state:
+    st.session_state['factor'] = 1
+
+
 
 def slider_group(groups):
     adjusted_data = []
@@ -55,11 +71,55 @@ def slider_group(groups):
             if sliders[f'slider_group_{key}'] == None:
                 sliders[f'slider_group_{key}']  = i[2]
             adjusted_data.append((i[0],i[1],sliders[f'slider_group_{key}'] ))
-    return adjusted_data        
+    return adjusted_data 
+
+def download(amp , HZ):
+    output = BytesIO()
+    # Write files to in-memory strings using BytesIO
+    # See: https://xlsxwriter.readthedocs.io/workbook.html?highlight=BytesIO#constructor
+    workbook = xlsxwriter.Workbook(output, {'in_memory': True})
+    worksheet = workbook.add_worksheet()
+    worksheet.write(0,0,"amp")
+    worksheet.write(0,1,"freq")
+    worksheet.write_column(1,0,amp)
+    worksheet.write_column(1,1,HZ)
+
+    workbook.close()
+    #Button of downloading
+    st.download_button(
+        label="Download",
+        data=output.getvalue(),
+        file_name="signal.xlsx",
+        mime="application/vnd.ms-excel"
+    ) 
+
+def extract_peak_frequency(data, sampling_rate):
+    fft_data = np.fft.fft(data)
+    freqs = np.fft.fftfreq(len(data))
+    
+    peak_coefficient = np.argmax(np.abs(fft_data))
+    peak_freq = freqs[peak_coefficient]
+    
+    return abs(peak_freq * sampling_rate)
+
+def change_amplitude(x,y,frequencies,factor):
+    for i in range(len(frequencies)):
+        for j in range(len(x)):
+            if np.round(x[j])==frequencies[i]:
+                y[j]=y[j]*factor
+    return y
+
+def inverse(amp,phase):
+    combined=np.multiply(amp,np.exp(1j*phase))
+    inverse_combined=fft.ifft(combined)
+    signal=np.real(inverse_combined)
+    return signal
+
+                
 
 
-st.session_state['groups'] = [(0,200,100),
-            (0,200,150),
+st.session_state['groups'] = [(0,200,st.session_state['factor']),
+            (-20,200,150),
             (0,200,75),
             (0,200,25),
             (0,200,150),
@@ -71,13 +131,40 @@ st.session_state['groups'] = [(0,200,100),
 
 upload_file= st.file_uploader("")
 if upload_file:
-    st.session_state['audio'],st.session_state['sampleRare']=librosa.load(upload_file)
+    st.session_state['audio'],st.session_state['sampleRare']= librosa.load(upload_file)
     #play audio
     st.audio(upload_file, format='audio/wav')
-    fig=px.line((st.session_state['audio']))
+
+    # audio_trim,_ = librosa.effects.trim(st.session_state['audio'], top_db=30)
+
+    # draw on time domain 
+    t=np.array(range(0,len(st.session_state['audio'])))/st.session_state['sampleRare']
+    fig=px.line(x=t,y=st.session_state['audio']).update_layout(xaxis_title='time(sec)')
+
+    # transform to fourier 
+    st.session_state['spectrum']=np.abs( fft.fft(st.session_state['audio']))
+    st.session_state['fft_frequency']= np.abs(fft.fftfreq(len(st.session_state['audio']),1/st.session_state['sampleRare']))
+    fft_phase=np.angle(fft.fft(st.session_state['audio']))
+    #control amp
+    if st.sidebar.checkbox("change amplitude"):
+        st.session_state['spectrum']=change_amplitude(st.session_state['fft_frequency'], st.session_state['spectrum'],np.arange(130,500,1) , 1.5)
+    fig_trans=px.line(x=st.session_state['fft_frequency'], y=st.session_state['spectrum']).update_layout(yaxis_title='Amp',xaxis_title='HZ')
+    
+    spectrum_inv=inverse(st.session_state['spectrum'], fft_phase) 
+    fig_inv=px.line(x=t,y=spectrum_inv).update_layout(xaxis_title='time(sec)')
+
+    #convert to audio
+    bytes_wav = bytes()
+    byte_io = io.BytesIO(bytes_wav)
+    write(byte_io,st.session_state['sampleRare'], spectrum_inv.astype(np.float32))
+    result_bytes = byte_io.read()
+    st.audio(result_bytes, format='audio/wav')
+
+
     st.plotly_chart(fig, use_container_width=True)
-
-
+    st.plotly_chart(fig_inv, use_container_width=True)
+    st.plotly_chart(fig_trans, use_container_width=True)
+    st.write(st.session_state['sampleRare'])
 
 st.session_state['sliderValues']=slider_group(st.session_state['groups'])
-# st.write(st.session_state)
+download(st.session_state['spectrum'],st.session_state['fft_frequency'])
