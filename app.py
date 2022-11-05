@@ -104,10 +104,16 @@ def extract_peak_frequency(data, sampling_rate):
 
 def change_amplitude(x,y,frequencies,factor):
     for i in range(len(frequencies)):
-        for j in range(len(x)):
-            if np.round(x[j])==frequencies[i]:
-                y[j]=y[j]*factor
+        j=np.where(np.round(x)==frequencies[i])
+        if j:
+            y[j]=y[j]*factor
     return y
+def convertToAudio(sr,signal):
+    bytes_wav = bytes()
+    byte_io = io.BytesIO(bytes_wav)
+    write(byte_io,sr, signal.astype(np.float32))
+    result_bytes = byte_io.read()
+    return result_bytes
 
 def inverse(amp,phase):
     combined=np.multiply(amp,np.exp(1j*phase))
@@ -147,24 +153,22 @@ if upload_file:
     fft_phase=np.angle(fft.fft(st.session_state['audio']))
     #control amp
     if st.sidebar.checkbox("change amplitude"):
-        st.session_state['spectrum']=change_amplitude(st.session_state['fft_frequency'], st.session_state['spectrum'],np.arange(130,500,1) , 1.5)
+        arrayofFrequncies=[]
+        arrayofFrequncies.extend(range(0,4000))
+        st.session_state['spectrum']=change_amplitude(st.session_state['fft_frequency'], st.session_state['spectrum'],arrayofFrequncies , 0)
     fig_trans=px.line(x=st.session_state['fft_frequency'], y=st.session_state['spectrum']).update_layout(yaxis_title='Amp',xaxis_title='HZ')
     
     spectrum_inv=inverse(st.session_state['spectrum'], fft_phase) 
     fig_inv=px.line(x=t,y=spectrum_inv).update_layout(xaxis_title='time(sec)')
-
+    
     #convert to audio
-    bytes_wav = bytes()
-    byte_io = io.BytesIO(bytes_wav)
-    write(byte_io,st.session_state['sampleRare'], spectrum_inv.astype(np.float32))
-    result_bytes = byte_io.read()
+    result_bytes = convertToAudio(st.session_state['sampleRare'], spectrum_inv)
     st.audio(result_bytes, format='audio/wav')
 
 
     st.plotly_chart(fig, use_container_width=True)
     st.plotly_chart(fig_inv, use_container_width=True)
     st.plotly_chart(fig_trans, use_container_width=True)
-    st.write(st.session_state['sampleRare'])
 
 st.session_state['sliderValues']=slider_group(st.session_state['groups'])
 download(st.session_state['spectrum'],st.session_state['fft_frequency'])
