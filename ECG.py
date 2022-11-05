@@ -5,25 +5,47 @@ from numpy import fft
 from scipy.io import loadmat
 import plotly.express as px
 
-uploaded_file = st.file_uploader('upload', label_visibility="hidden")
-   
+
+if 'ECG' not in st.session_state:
+    st.session_state['ECG'] =[]
+if 'spectrum' not in st.session_state:
+    st.session_state['spectrum']=[]
+if 'fft_frequency' not in st.session_state:
+    st.session_state['fft_frequency'] = []    
+
+
+
+
+def inverse(amp,phase):
+    combined=np.multiply(amp,np.exp(1j*phase))
+    inverse_combined=fft.ifft(combined)
+    signal=np.real(inverse_combined)
+    return signal
+
+uploaded_file = st.file_uploader('upload', label_visibility="hidden")  
 if uploaded_file is not None:
    Signal=loadmat(uploaded_file)
-   Signal_value=Signal["val"][0]
-   N = len(  Signal_value)
-   st.write(   N)
+   st.session_state['ECG'] =Signal["val"][0]
+   Samples = len(  st.session_state['ECG'])
    Fs = 1000
    T = 1 / Fs
-   x=np.linspace(0,N*T,N)
-   fig = px.line(x=x, y=Signal_value)
+   Time=np.linspace(0,Samples*T,Samples)
+   #Time domain
+   fig = px.line(x=Time, y=st.session_state['ECG'])
    st.plotly_chart(fig,use_container_width=True)
 
-#Compute FFT
-   yf = fft.fft(Signal_value)
-   yf=np.abs(yf)
-#Compute frequency x-axis
-#    xf = np.linspace(0, 1/(2*T),N)
-   xf=np.abs(fft.fftfreq(N,T))
-   fig_2= px.line(x=xf, y=yf)
+   #FFT
+   signal=fft.fft(st.session_state['ECG'])
+   st.session_state['spectrum']=(np.abs( signal))
+   st.session_state['fft_frequency']= np.abs(fft.fftfreq(Samples,T))
+   signal_phase=np.angle(signal)
+
+   # Freqency domain
+   fig_2= px.line(x=st.session_state['fft_frequency'], y=st.session_state['spectrum'])
    st.plotly_chart(fig_2,use_container_width=True)
-  
+
+   
+   #inverse
+   spectrum_inv=inverse(st.session_state['spectrum'],signal_phase) 
+   fig_inv=px.line(x=Time,y=spectrum_inv).update_layout(xaxis_title='time(sec)')
+   st.plotly_chart(fig_inv,use_container_width=True)
