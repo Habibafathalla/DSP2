@@ -93,14 +93,14 @@ def download(amp , HZ):
         mime="application/vnd.ms-excel"
     ) 
 
-def extract_peak_frequency(data, sampling_rate):
-    fft_data = np.fft.fft(data)
-    freqs = np.fft.fftfreq(len(data))
+# def extract_peak_frequency(data, sampling_rate):
+#     fft_data = np.fft.fft(data)
+#     freqs = np.fft.fftfreq(len(data))
     
-    peak_coefficient = np.argmax(np.abs(fft_data))
-    peak_freq = freqs[peak_coefficient]
+#     peak_coefficient = np.argmax(np.abs(fft_data))
+#     peak_freq = freqs[peak_coefficient]
     
-    return abs(peak_freq * sampling_rate)
+#     return abs(peak_freq * sampling_rate)
 
 def change_amplitude(x,y,frequencies,factor):
     for i in range(len(frequencies)):
@@ -124,7 +124,7 @@ def inverse(amp,phase):
                 
 
 
-st.session_state['groups'] = [(0,200,st.session_state['factor']),
+st.session_state['groups'] = [(0,200,0),
             (-20,200,150),
             (0,200,75),
             (0,200,25),
@@ -148,9 +148,10 @@ if upload_file:
     fig=px.line(x=t,y=st.session_state['audio']).update_layout(xaxis_title='time(sec)')
 
     # transform to fourier 
-    st.session_state['spectrum']=np.abs( fft.fft(st.session_state['audio']))
+    signal=fft.fft(st.session_state['audio'])
+    st.session_state['spectrum']=np.abs( signal)
     st.session_state['fft_frequency']= np.abs(fft.fftfreq(len(st.session_state['audio']),1/st.session_state['sampleRare']))
-    fft_phase=np.angle(fft.fft(st.session_state['audio']))
+    fft_phase=np.angle(signal)
     #control amp
     if st.sidebar.checkbox("change amplitude"):
         arrayofFrequncies=[]
@@ -160,7 +161,7 @@ if upload_file:
     
     spectrum_inv=inverse(st.session_state['spectrum'], fft_phase) 
     fig_inv=px.line(x=t,y=spectrum_inv).update_layout(xaxis_title='time(sec)')
-    
+
     #convert to audio
     result_bytes = convertToAudio(st.session_state['sampleRare'], spectrum_inv)
     st.audio(result_bytes, format='audio/wav')
