@@ -45,7 +45,8 @@ if uploaded_file is not None:
    st.plotly_chart(fig_2,use_container_width=True)
 
    
-   #inverse
+   #signal inverse 
    spectrum_inv=inverse(st.session_state['spectrum'],signal_phase) 
    fig_inv=px.line(x=Time,y=spectrum_inv).update_layout(xaxis_title='time(sec)')
    st.plotly_chart(fig_inv,use_container_width=True)
+   
