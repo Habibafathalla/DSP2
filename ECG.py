@@ -25,9 +25,9 @@ def inverse(amp,phase):
 uploaded_file = st.file_uploader('upload', label_visibility="hidden")  
 if uploaded_file is not None:
    Signal=loadmat(uploaded_file)
-   st.session_state['ECG'] =Signal["val"][0]
+   st.session_state['ECG'] =(Signal["val"][0])/200   # 200 is a data gain  
    Samples = len(  st.session_state['ECG'])
-   Fs = 1000
+   Fs = Samples/10
    T = 1 / Fs
    Time=np.linspace(0,Samples*T,Samples)
    #Time domain
@@ -35,7 +35,7 @@ if uploaded_file is not None:
    st.plotly_chart(fig,use_container_width=True)
 
    #FFT
-   signal=fft.fft(st.session_state['ECG'])
+   signal=fft.fft(st.session_state['ECG']*.001)
    st.session_state['spectrum']=(np.abs( signal))
    st.session_state['fft_frequency']= np.abs(fft.fftfreq(Samples,T))
    signal_phase=np.angle(signal)

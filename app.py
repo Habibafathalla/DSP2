@@ -23,11 +23,30 @@ from io import BytesIO
 from scipy.signal import find_peaks
 from scipy.io.wavfile import write
 
+st.set_page_config(page_title="Equalizer", page_icon=":bar_chart:",layout="wide")
+
+st.set_option('deprecation.showPyplotGlobalUse', False)
+
+reduce_header_height_style = """
+    <style>
+        div.block-container {padding-top:0rem;}
+    </style>
+"""
+st.markdown(reduce_header_height_style, unsafe_allow_html=True)
 
 
+st.write(
+    '<style>div.row-widget.stRadio > div{flex-direction:row;justify-content: left;} </style>', unsafe_allow_html=True)
 
 
-st.set_page_config(page_title="equalizer", page_icon=":bar_chart:",layout="wide")
+def local_css(file_name):
+    with open(file_name) as f:
+        st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
+
+
+local_css("style.css")
+
+
 
 
 #hiding copyright things
@@ -135,17 +154,40 @@ st.session_state['groups'] = [(0,200,0),
             (0,200,150),
             (0,200,25)]
 
-upload_file= st.file_uploader("")
+
+
+
+selsect_col,input_col,output_col=st.columns((1,2,2))
+
+
+with selsect_col:
+     st.selectbox(
+     'Equalizer',
+     ('Uniform Range', 'Vowles', 'Music',"ECG"))
+     upload_file= st.file_uploader("")
+     st.write("")
+     st.radio(
+     "Spectogram",
+     ('Show', 'Hide'))
+
+
+
+# upload_file= st.file_uploader("")
 if upload_file:
     st.session_state['audio'],st.session_state['sampleRare']= librosa.load(upload_file)
     #play audio
-    st.audio(upload_file, format='audio/wav')
+    with input_col:
+
+
+        st.audio(upload_file, format='audio/wav')
 
     # audio_trim,_ = librosa.effects.trim(st.session_state['audio'], top_db=30)
 
     # draw on time domain 
-    t=np.array(range(0,len(st.session_state['audio'])))/st.session_state['sampleRare']
-    fig=px.line(x=t,y=st.session_state['audio']).update_layout(xaxis_title='time(sec)')
+        t=np.array(range(0,len(st.session_state['audio'])))/st.session_state['sampleRare']
+        fig=px.line(x=t,y=st.session_state['audio']).update_layout(xaxis_title='time(sec)')
+        st.plotly_chart(fig, use_container_width=True)
+
 
     # transform to fourier 
     signal=fft.fft(st.session_state['audio'])
@@ -153,7 +195,7 @@ if upload_file:
     st.session_state['fft_frequency']= np.abs(fft.fftfreq(len(st.session_state['audio']),1/st.session_state['sampleRare']))
     fft_phase=np.angle(signal)
     #control amp
-    if st.sidebar.checkbox("change amplitude"):
+    if st.checkbox("change amplitude"):
         arrayofFrequncies=[]
         arrayofFrequncies.extend(range(0,4000))
         st.session_state['spectrum']=change_amplitude(st.session_state['fft_frequency'], st.session_state['spectrum'],arrayofFrequncies , 0)
@@ -164,12 +206,14 @@ if upload_file:
 
     #convert to audio
     result_bytes = convertToAudio(st.session_state['sampleRare'], spectrum_inv)
-    st.audio(result_bytes, format='audio/wav')
+    with output_col:
+        st.audio(result_bytes, format='audio/wav')
+        st.plotly_chart(fig_inv, use_container_width=True)
 
 
-    st.plotly_chart(fig, use_container_width=True)
-    st.plotly_chart(fig_inv, use_container_width=True)
-    st.plotly_chart(fig_trans, use_container_width=True)
+    # st.plotly_chart(fig, use_container_width=True)
+    # st.plotly_chart(fig_inv, use_container_width=True)
+    # st.plotly_chart(fig_trans, use_container_width=True)
 
 st.session_state['sliderValues']=slider_group(st.session_state['groups'])
 download(st.session_state['spectrum'],st.session_state['fft_frequency'])

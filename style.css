@@ -1,3 +1,21 @@
 .MuiSlider-track{
     display: inline-block;
 }
+
+
+@media (min-width: 576px)
+{
+.css-18e3th9 {
+    padding-left: 1.5rem;
+}}
+
+.css-po3vlj {
+    display: block;
+
+}
+.css-6kekos.edgvbvh9{
+    margin-top: 10px
+}
+#audio{
+    margin-top: 20px
+}
