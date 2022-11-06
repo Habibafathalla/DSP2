@@ -72,8 +72,7 @@ if 'spectrum' not in st.session_state:
     st.session_state['spectrum'] = []
 if 'fft_frequency' not in st.session_state:
     st.session_state['fft_frequency'] = []
-if 'factor' not in st.session_state:
-    st.session_state['factor'] = 1
+
 
 
 
@@ -89,8 +88,8 @@ def slider_group(groups):
             sliders[f'slider_group_{key}'] = svs.vertical_slider(key=key, default_value=i[2], step=1, min_value=min_value, max_value=max_value)
             if sliders[f'slider_group_{key}'] == None:
                 sliders[f'slider_group_{key}']  = i[2]
-            adjusted_data.append((i[0],i[1],sliders[f'slider_group_{key}'] ))
-    return adjusted_data 
+            adjusted_data.append((i[3],(sliders[f'slider_group_{key}'] )))
+    return adjusted_data
 
 def download(amp , HZ):
     output = BytesIO()
@@ -125,7 +124,10 @@ def change_amplitude(x,y,frequencies,factor):
     for i in range(len(frequencies)):
         j=np.where(np.round(x)==frequencies[i])
         if j:
-            y[j]=y[j]*factor
+            if factor>0:
+                y[j]=y[j]*(factor/20)
+            elif factor<0:
+                y[j]=y[j]-y[j]*(abs(factor)/20)
     return y
 def convertToAudio(sr,signal):
     bytes_wav = bytes()
@@ -143,16 +145,21 @@ def inverse(amp,phase):
                 
 
 
-st.session_state['groups'] = [(0,200,0),
-            (-20,200,150),
-            (0,200,75),
-            (0,200,25),
-            (0,200,150),
-            (0,200,60),
-            (0,200,86),
-            (0,200,150),
-            (0,200,150),
-            (0,200,25)]
+ranges={
+    '0':np.concatenate([range(1,5),range(100,1000),range(1000,4001)]),
+    '1':np.concatenate([range(50,201),range(2000,3001)])
+}
+
+st.session_state['groups'] = [(-20,20,0,ranges['0']),
+            (-20,20,0,ranges['1']),
+            (-20,20,0,ranges['1']),
+            (-20,20,0,ranges['1']),
+            (-20,20,0,ranges['1']),
+            (-20,20,0,ranges['1']),
+            (-20,20,0,ranges['1']),
+            (-20,20,0,ranges['1']),
+            (-20,20,0,ranges['1']),
+            (-20,20,0,ranges['1'])]
 
 
 
@@ -195,10 +202,8 @@ if upload_file:
     st.session_state['fft_frequency']= np.abs(fft.fftfreq(len(st.session_state['audio']),1/st.session_state['sampleRare']))
     fft_phase=np.angle(signal)
     #control amp
-    if st.checkbox("change amplitude"):
-        arrayofFrequncies=[]
-        arrayofFrequncies.extend(range(0,4000))
-        st.session_state['spectrum']=change_amplitude(st.session_state['fft_frequency'], st.session_state['spectrum'],arrayofFrequncies , 0)
+    for i in st.session_state['sliderValues']:
+        st.session_state['spectrum']=change_amplitude(st.session_state['fft_frequency'], st.session_state['spectrum'],i[0], i[1])
     fig_trans=px.line(x=st.session_state['fft_frequency'], y=st.session_state['spectrum']).update_layout(yaxis_title='Amp',xaxis_title='HZ')
     
     spectrum_inv=inverse(st.session_state['spectrum'], fft_phase) 
