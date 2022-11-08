@@ -119,15 +119,24 @@ def download(amp , HZ):
 #     peak_freq = freqs[peak_coefficient]
     
 #     return abs(peak_freq * sampling_rate)
+def find_reanges(x,y):
+    i=np.where(np.round(y)>5)
+    ranges=[]
+    for j in i:
+        if not np.round(x[j]) in ranges:
+            ranges.append(np.round(x[j]))
+    return ranges
+
 
 def change_amplitude(x,y,frequencies,factor):
     for i in range(len(frequencies)):
         j=np.where(np.round(x)==frequencies[i])
         if j:
-            if factor>0:
-                y[j]=y[j]*(factor/20)
-            elif factor<0:
-                y[j]=y[j]-y[j]*(abs(factor)/20)
+            if factor!=0:
+                if factor>0:
+                    y[j]+=y[j]*(factor/20)
+                elif factor<0:
+                    y[j]=y[j]-y[j]*(abs(factor)/20)
     return y
 def convertToAudio(sr,signal):
     bytes_wav = bytes()
@@ -146,20 +155,23 @@ def inverse(amp,phase):
 
 
 ranges={
-    '0':np.concatenate([range(1,5),range(100,1000),range(1000,4001)]),
-    '1':np.concatenate([range(50,201),range(2000,3001)])
+    'e':np.concatenate([[0,1],range(138,169),range(279,327),range(2095,2400)]),
+    'o':np.concatenate([[0,1],range(138,152),range(271,304),range(392,455),range(561,600),range(700,891)]),
+    'a':np.concatenate([[0,1],range(115,153),range(242,280),range(370,500),range(500,1200),range(1300,2656)]),
+    'z':np.concatenate([range(0,6),range(70,210),range(250,501)])
+    
+#
 }
-
-st.session_state['groups'] = [(-20,20,0,ranges['0']),
-            (-20,20,0,ranges['1']),
-            (-20,20,0,ranges['1']),
-            (-20,20,0,ranges['1']),
-            (-20,20,0,ranges['1']),
-            (-20,20,0,ranges['1']),
-            (-20,20,0,ranges['1']),
-            (-20,20,0,ranges['1']),
-            (-20,20,0,ranges['1']),
-            (-20,20,0,ranges['1'])]
+st.session_state['groups'] = [(-20,20,0,ranges['e']),
+            (-20,20,0,ranges['o']),
+            (-20,20,0,ranges['a']),
+            (-20,20,0,ranges['z']),
+            (-20,20,0,ranges['z']),
+            (-20,20,0,ranges['z']),
+            (-20,20,0,ranges['z']),
+            (-20,20,0,ranges['z']),
+            (-20,20,0,ranges['z']),
+            (-20,20,0,ranges['z'])]
 
 
 
@@ -218,7 +230,8 @@ if upload_file:
 
     # st.plotly_chart(fig, use_container_width=True)
     # st.plotly_chart(fig_inv, use_container_width=True)
-    # st.plotly_chart(fig_trans, use_container_width=True)
+    st.plotly_chart(fig_trans, use_container_width=True)
+    st.write(find_reanges(st.session_state['fft_frequency'],st.session_state['spectrum'] ))
 
 st.session_state['sliderValues']=slider_group(st.session_state['groups'])
 download(st.session_state['spectrum'],st.session_state['fft_frequency'])
