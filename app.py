@@ -37,6 +37,9 @@ st.set_option('deprecation.showPyplotGlobalUse', False)
 reduce_header_height_style = """
     <style>
         div.block-container {padding-top:0rem;}
+        header {visibility: hidden;}
+        #MainMenu {visibility: hidden;}
+        footer {visibility: hidden;}
     </style>
 """
 st.markdown(reduce_header_height_style, unsafe_allow_html=True)
@@ -56,15 +59,6 @@ local_css("style.css")
 
 
 
-#hiding copyright things
-hide_st_style = """
-            <style>
-            #MainMenu {visibility: hidden;}
-            footer {visibility: hidden;}
-            header {visibility: hidden;}
-            </style>
-            """
-
 # Initialization of session state
 if 'sliderValues' not in st.session_state:
     st.session_state['sliderValues'] = []
@@ -80,9 +74,12 @@ if 'spectrum' not in st.session_state:
 if 'fft_frequency' not in st.session_state:
     st.session_state['fft_frequency'] = []
 
-if  'Uniform_Range_Deafult' not in st.session_state:
-    st.session_state['Uniform_Range_Deafult']=[]
+if  'Uniform_Range_Default' not in st.session_state:
+    st.session_state['Uniform_Range_Default']=[]
+if  'spectrum_inv' not in st.session_state:
+    st.session_state['spectrum_inv']=[]
 
+ 
 time = np.linspace(0,1,1000)
 
 def slider_group(groups): 
@@ -95,6 +92,7 @@ def slider_group(groups):
         key = f'member{str(idx)}'
         with columns[idx]:
             sliders[f'slider_group_{key}'] = svs.vertical_slider(key=key, default_value=i[2], step=1, min_value=min_value, max_value=max_value)
+            st.text(i[4])
             if sliders[f'slider_group_{key}'] == None:
                 sliders[f'slider_group_{key}']  = i[2]
             adjusted_data.append((i[3],(sliders[f'slider_group_{key}'] )))
@@ -184,7 +182,7 @@ def plotSpectrogram(audioData, fs, Title):
         size=17))
     fig.update_xaxes(title='Time')
     fig.update_yaxes(title='Frequency')
-    st.plotly_chart(fig, use_container_width=True)
+    st.sidebar.plotly_chart(fig, use_container_width=True)
 
 ranges={
     'e':np.concatenate([[0,1],range(138,169),range(279,327),range(2095,2400)]),
@@ -194,30 +192,33 @@ ranges={
     
 
 }
-st.session_state['groups'] = [(-20,20,0,ranges['e']),
-            (-20,20,0,ranges['o']),
-            (-20,20,0,ranges['a']),
-            (-20,20,0,ranges['z']),
-            (-20,20,0,ranges['z']),
-            (-20,20,0,ranges['z']),
-            (-20,20,0,ranges['z']),
-            (-20,20,0,ranges['z']),
-            (-20,20,0,ranges['z']),
-            (-20,20,0,ranges['z'])]
+st.session_state['groups'] = [(-20,20,0,ranges['e'],'E'),
+            (-20,20,0,ranges['o'],'O'),
+            (-20,20,0,ranges['a'],'A'),
+            (-20,20,0,ranges['z'],'Z'),
+            (-20,20,0,ranges['z'],'1st range'),
+            (-20,20,0,ranges['z'],'Paino'),
+            (-20,20,0,ranges['z'],'Z'),
+            (-20,20,0,ranges['z'],'Z'),
+            (-20,20,0,ranges['z'],'Z'),
+            (-20,20,0,ranges['z'],'Z')]
 
 selsect_col,graph=st.columns((1,4))
+
 
 
 with selsect_col:
      Mode_Selection=st.selectbox(
      'Equalizer',
      ('Uniform Range', 'Vowels', 'Musical Instruments',"ECG Abnormalities",'Voice Changer'))
-     st.write("")
+    #  st.write("")
      spec_visibality=st.radio(
      "Spectogram",
      ('Hide', 'Show'))
      if spec_visibality=='Show':
-        plotSpectrogram(st.session_state['audio'],st.session_state['sampleRare'],'Title')
+        plotSpectrogram(st.session_state['audio'],st.session_state['sampleRare'],'Input')
+        plotSpectrogram(st.session_state['spectrum_inv'],st.session_state['sampleRare'],'Output')
+
 
 
 
@@ -228,49 +229,66 @@ if Mode_Selection=='Vowels' or Mode_Selection=='Musical Instruments' or Mode_Sel
     if upload_file:
 
         st.session_state['audio'],st.session_state['sampleRare']= librosa.load(upload_file)
+        audio_trim,_ = librosa.effects.trim(st.session_state['audio'], top_db=30)
+        st.session_state['audio']=audio_trim
     #play audio
 
-        with graph:
+        with selsect_col:
            st.audio(upload_file, format='audio/wav')
-    # audio_trim,_ = librosa.effects.trim(st.session_state['audio'], top_db=30)
         # draw on time domain 
            t=np.array(range(0,len(st.session_state['audio'])))/st.session_state['sampleRare']
 
         # transform to fourier 
            signal=fft.fft(st.session_state['audio'])
            st.session_state['spectrum']=np.abs( signal)
-           st.session_state['fft_frequency']= np.abs(fft.fftfreq(len(st.session_state['audio']),1/st.session_state['sampleRare']))
+           st.session_state['fft_frequency']= fft.fftfreq(len(st.session_state['audio']),1/st.session_state['sampleRare'])
            fft_phase=np.angle(signal)
            #control amp
            for i in st.session_state['sliderValues']:
 
         # freq_list=select_range(i[0],0,4000,True)
             st.session_state['spectrum']=change_amplitude(st.session_state['fft_frequency'],st.session_state['spectrum'], i[0], i[1])
+           
            fig_trans=px.line(x=st.session_state['fft_frequency'], y=st.session_state['spectrum']).update_layout(yaxis_title='Amp',xaxis_title='HZ')
            fig_spect =go.Figure(data =
            go.Heatmap(x = st.session_state['fft_frequency'], y= st.session_state['spectrum']))
-           spectrum_inv=inverse(st.session_state['spectrum'], fft_phase) 
+           st.session_state['spectrum_inv']=inverse(st.session_state['spectrum'], fft_phase) 
 
          #convert to audio
-           result_bytes = convertToAudio(st.session_state['sampleRare'], spectrum_inv)
+           result_bytes = convertToAudio(st.session_state['sampleRare'], st.session_state['spectrum_inv'])
  
-           with graph:
+           with selsect_col:
             st.audio(result_bytes, format='audio/wav')
-        # st.plotly_chart(fig)
-            zoom_fuc(t,st.session_state['audio'],spectrum_inv)
-
-
-
-# if Mode_Selection=='Uniform Range':
-#         with selsect_col:
-#            upload_file= st.file_uploader("Upload your File",type='csv')
-#         with graph:
-#            st.session_state['Uniform_Range_Deafult']=4*np.sin(2*np.pi*2*time)
-#            zoom_fuc(time,st.session_state['Uniform_Range_Deafult'])
         
-#         if upload_file:
-#             data = pd.read_csv(upload_file)
+           with graph:
+            zoom_fuc(t,st.session_state['audio'],st.session_state['spectrum_inv'])
 
+
+
+if Mode_Selection=='Uniform Range':
+        with selsect_col:
+           upload_file= st.file_uploader("Upload your File",type='csv')
+        
+        if upload_file:
+            st.session_state['Uniform_Range_Default'] = pd.read_csv(upload_file)
+        else:
+            st.session_state['Uniform_Range_Default']=4*np.sin(2*np.pi*2*time)
+
+        signal=fft.fft(st.session_state['Uniform_Range_Default'])
+        Fs = len(st.session_state['Uniform_Range_Default'])/10
+        T = 1 / Fs
+        spectrum=np.abs( signal)
+        fft_frequency= abs(fft.fftfreq(len(st.session_state['Uniform_Range_Default']),T))
+        fft_phase=np.angle(signal)
+        for i in st.session_state['sliderValues']:
+             spectrum=change_amplitude(fft_frequency,spectrum, i[0], i[1])
+           
+        fig_trans=px.line(x=fft_frequency, y=spectrum).update_layout(yaxis_title='Amp',xaxis_title='HZ')
+        fig_spect =go.Figure(data =
+        go.Heatmap(x = fft_frequency, y= spectrum))
+        spectrum_inv =inverse(spectrum, fft_phase)
+        with graph:
+            zoom_fuc(time,st.session_state['Uniform_Range_Default'],spectrum_inv)
 
 
 if Mode_Selection=='ECG Abnormalities':
@@ -287,9 +305,9 @@ if Mode_Selection=='ECG Abnormalities':
            st.session_state['spectrum']=(np.abs( signal))
            st.session_state['fft_frequency']= np.abs(fft.fftfreq(Samples,T))
            signal_phase=np.angle(signal)
-           spectrum_inv=inverse(st.session_state['spectrum'],signal_phase) 
+           st.session_state['spectrum_inv']=inverse(st.session_state['spectrum'],signal_phase) 
            with graph:
-            zoom_fuc(Time,st.session_state['ECG'],spectrum_inv)
+            zoom_fuc(Time,st.session_state['ECG'],st.session_state['spectrum_inv'])
 
 st.session_state['sliderValues']=slider_group(st.session_state['groups'])
-download(st.session_state['spectrum'],st.session_state['fft_frequency'])
+# download(st.session_state['spectrum'],st.session_state['fft_frequency'])

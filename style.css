@@ -11,11 +11,41 @@
 
 .css-po3vlj {
     display: block;
+    padding: 0;
 
 }
 .css-6kekos.edgvbvh9{
-    margin-top: 10px
+    margin-top: 10px;
+    color: rgb(240, 242, 246)
 }
 #audio{
-    margin-top: 20px
+    margin-top: -10px
+}
+.css-183lzff {
+    color: #11567f;
+    font-weight: bold;
+    font-family: "Source Code Pro", monospace;
+    white-space: pre;
+    font-size: 13px;
+    text-align: center;
+    overflow-x: auto;
+    margin-top: -22px;
+    margin-left: -30px;
+}
+.css-6kekos {
+    display: inline-flex;
+    -webkit-box-align: center;
+    align-items: center;
+    -webkit-box-pack: center;
+    justify-content: center;
+    font-weight: 400;
+    padding: 0;
+    border-radius: 0.25rem;
+    margin: 0px;
+    line-height: 1.6;
+    color: rgb(240, 242, 246);
+    width: auto;
+    user-select: none;
+    background-color: rgb(240, 242, 246);
+    border: rgb(240, 242, 246);
 }
