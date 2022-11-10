@@ -223,7 +223,7 @@ with selsect_col:
 
 
       
-if Mode_Selection=='Vowels' or Mode_Selection=='Musical Instruments' or Mode_Selection=='Voice Changer':
+if Mode_Selection=='Vowels' or Mode_Selection=='Musical Instruments' :
     with selsect_col:
         upload_file= st.file_uploader("Upload your File",type='wav')
     if upload_file:
@@ -308,6 +308,36 @@ if Mode_Selection=='ECG Abnormalities':
            st.session_state['spectrum_inv']=inverse(st.session_state['spectrum'],signal_phase) 
            with graph:
             zoom_fuc(Time,st.session_state['ECG'],st.session_state['spectrum_inv'])
+    
+if Mode_Selection=='Voice Changer':
+    with selsect_col:
+        upload_file= st.file_uploader("Upload your File",type='wav')
+    if upload_file:
+
+        st.session_state['audio'],st.session_state['sampleRare']= librosa.load(upload_file)
+        audio_trim,_ = librosa.effects.trim(st.session_state['audio'], top_db=30)
+        st.session_state['audio']=audio_trim
+    #play audio
+
+        with selsect_col:
+           st.audio(upload_file, format='audio/wav')
+        # draw on time domain 
+        t=np.array(range(0,len(st.session_state['audio'])))/st.session_state['sampleRare']
+        # fig_trans=px.line(x=st.session_state['fft_frequency'], y=st.session_state['spectrum']).update_layout(yaxis_title='Amp',xaxis_title='HZ')
+        fig_spect =go.Figure(data =
+           go.Heatmap(x = st.session_state['fft_frequency'], y= st.session_state['spectrum']))
+        st.session_state['spectrum_inv']= librosa.effects.pitch_shift(st.session_state['audio'] , sr= st.session_state['sampleRare'] , n_steps=st.session_state['sliderValues'][0][1])
+
+         #convert to audio
+        result_bytes = convertToAudio(st.session_state['sampleRare'], st.session_state['spectrum_inv'])
+ 
+        with selsect_col:
+         st.audio(result_bytes, format='audio/wav')
+        
+        with graph:
+         zoom_fuc(t,st.session_state['audio'],st.session_state['spectrum_inv'])
+    
+
 
 st.session_state['sliderValues']=slider_group(st.session_state['groups'])
 # download(st.session_state['spectrum'],st.session_state['fft_frequency'])
