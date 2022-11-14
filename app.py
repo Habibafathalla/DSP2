@@ -24,10 +24,13 @@ from scipy.signal import find_peaks
 from scipy.io.wavfile import write
 from plotly.subplots import make_subplots
 import plotly.graph_objects as go
-# import time
+import time as ti
 from scipy import signal
 from scipy.io import loadmat
 import plotly.express as px
+import matplotlib.animation as animation
+import altair as alt
+from pandas import Series
 
 
 st.set_page_config(page_title="Equalizer", page_icon=":bar_chart:",layout="wide")
@@ -81,6 +84,59 @@ if  'spectrum_inv' not in st.session_state:
 
  
 time = np.linspace(0,1,1000)
+
+def altair_plot(original_df, modified_df):
+    lines = alt.Chart(original_df).mark_line().encode(
+        x=alt.X('0:T', axis=alt.Axis(title='Time')),
+        y=alt.Y('1:Q', axis=alt.Axis(title='Amplitude'))
+    ).properties(
+        width=400,
+        height=300
+    )
+    modified_lines = alt.Chart(modified_df).mark_line().encode(
+        x=alt.X('0:T', axis=alt.Axis(title='Time')),
+        y=alt.Y('1:Q', axis=alt.Axis(title='Amplitude'))
+    ).properties(
+        width=400,
+        height=300
+    ).interactive()
+    return lines
+
+
+def animation(original_df):
+    lines = alt.Chart(original_df).mark_line().encode(
+        x=alt.X('time', axis=alt.Axis(title='Time')),
+        y=alt.Y('amplitude', axis=alt.Axis(title='Amplitude')),
+    ).properties(
+        width=400,
+        height=300
+    ).interactive()
+
+    return lines
+
+
+def animation2(original_df):
+    lines = alt.Chart(original_df).mark_line().encode(
+        x=alt.X('time', axis=alt.Axis(title='Frequency')),
+        y=alt.Y('amplitude', axis=alt.Axis(title='Amplitude')),
+    ).properties(
+        width=400,
+        height=300
+    ).interactive()
+
+    return lines
+
+
+def dynamic_plot(line_plot, original_df, modified_df):
+    N = len(original_df)
+    for i in range(0, N):
+        step_df = original_df.iloc[i:(i+1)*1000]
+        mod_step_df = modified_df.iloc[i:(i+1)*1000]
+        lines = animation(step_df)
+        mod_lines = animation2(mod_step_df)
+        concat = alt.hconcat(lines, mod_lines)
+        line_plot = line_plot.altair_chart(concat)
+        ti.sleep(.05)
 
 def slider_group(groups): 
     adjusted_data = []
@@ -188,20 +244,9 @@ ranges={
     'e':np.concatenate([[0,1],range(138,169),range(279,327),range(2095,2400)]),
     'o':np.concatenate([[0,1],range(138,152),range(271,304),range(392,455),range(561,600),range(700,891)]),
     'a':np.concatenate([[0,1],range(115,153),range(242,280),range(370,500),range(500,1200),range(1300,2656)]),
-    'z':np.concatenate([range(0,6),range(70,210),range(250,501)])
-    
-
+    'z':np.concatenate([range(0,6),range(70,210),range(250,501)])  
 }
-st.session_state['groups'] = [(-20,20,0,ranges['e'],'E'),
-            (-20,20,0,ranges['o'],'O'),
-            (-20,20,0,ranges['a'],'A'),
-            (-20,20,0,ranges['z'],'Z'),
-            (-20,20,0,ranges['z'],'1st range'),
-            (-20,20,0,ranges['z'],'Paino'),
-            (-20,20,0,ranges['z'],'Z'),
-            (-20,20,0,ranges['z'],'Z'),
-            (-20,20,0,ranges['z'],'Z'),
-            (-20,20,0,ranges['z'],'Z')]
+
 
 selsect_col,graph=st.columns((1,4))
 
@@ -224,6 +269,16 @@ with selsect_col:
 
       
 if Mode_Selection=='Vowels' or Mode_Selection=='Musical Instruments' :
+    st.session_state['groups'] = [(-20,20,0,ranges['e'],'E'),
+            (-20,20,0,ranges['o'],'O'),
+            (-20,20,0,ranges['a'],'A'),
+            (-20,20,0,ranges['z'],'Z'),
+            (-20,20,0,ranges['z'],'z'),
+            (-20,20,0,ranges['z'],'z'),
+            (-20,20,0,ranges['z'],'Z'),
+            (-20,20,0,ranges['z'],'Z'),
+            (-20,20,0,ranges['z'],'Z'),
+            (-20,20,0,ranges['z'],'Z')]
     with selsect_col:
         upload_file= st.file_uploader("Upload your File",type='wav')
     if upload_file:
@@ -244,12 +299,14 @@ if Mode_Selection=='Vowels' or Mode_Selection=='Musical Instruments' :
            st.session_state['fft_frequency']= fft.fftfreq(len(st.session_state['audio']),1/st.session_state['sampleRare'])
            fft_phase=np.angle(signal)
            #control amp
+           st.session_state['audio']=inverse(st.session_state['spectrum'],fft_phase)
            for i in st.session_state['sliderValues']:
 
         # freq_list=select_range(i[0],0,4000,True)
             st.session_state['spectrum']=change_amplitude(st.session_state['fft_frequency'],st.session_state['spectrum'], i[0], i[1])
            
            fig_trans=px.line(x=st.session_state['fft_frequency'], y=st.session_state['spectrum']).update_layout(yaxis_title='Amp',xaxis_title='HZ')
+        #    st.plotly_chart(fig_trans,use_container_width=False)
            fig_spect =go.Figure(data =
            go.Heatmap(x = st.session_state['fft_frequency'], y= st.session_state['spectrum']))
            st.session_state['spectrum_inv']=inverse(st.session_state['spectrum'], fft_phase) 
@@ -258,14 +315,37 @@ if Mode_Selection=='Vowels' or Mode_Selection=='Musical Instruments' :
            result_bytes = convertToAudio(st.session_state['sampleRare'], st.session_state['spectrum_inv'])
  
            with selsect_col:
-            st.audio(result_bytes, format='audio/wav')
-        
+                st.audio(result_bytes, format='audio/wav')
            with graph:
-            zoom_fuc(t,st.session_state['audio'],st.session_state['spectrum_inv'])
+        #     zoom_fuc(t,st.session_state['audio'],st.session_state['spectrum_inv'])
+        
+            original_df = pd.DataFrame(
+                {'time': t, 'amplitude': st.session_state['audio']}, columns=['time', 'amplitude'])
+            modified_df = pd.DataFrame(
+                {'time': t, 'amplitude': st.session_state['spectrum_inv']}, columns=['time', 'amplitude'])
+            lines = altair_plot(original_df, modified_df)
+            # st.write(lines)
+            line_plot = st.altair_chart(lines)
+
+            play = st.button('Play')
+
+            if play:
+                dynamic_plot(line_plot, original_df, modified_df)
+
 
 
 
 if Mode_Selection=='Uniform Range':
+        st.session_state['groups'] = [(-20,20,0,ranges['e'],'1st'),
+                (-20,20,0,ranges['a'],'2nd'),
+                (-20,20,0,ranges['z'],'3rd'),
+                (-20,20,0,ranges['z'],'4th'),
+                (-20,20,0,ranges['z'],'5th'),
+                (-20,20,0,ranges['z'],'6th'),
+                (-20,20,0,ranges['z'],'7th'),
+                (-20,20,0,ranges['z'],'8th'),
+                (-20,20,0,ranges['o'],'9th'),
+                (-20,20,0,ranges['z'],'10th')]
         with selsect_col:
            upload_file= st.file_uploader("Upload your File",type='csv')
         
@@ -310,6 +390,7 @@ if Mode_Selection=='ECG Abnormalities':
             zoom_fuc(Time,st.session_state['ECG'],st.session_state['spectrum_inv'])
     
 if Mode_Selection=='Voice Changer':
+    st.session_state['groups'] = [(-20,20,0,ranges['e'],'')]
     with selsect_col:
         upload_file= st.file_uploader("Upload your File",type='wav')
     if upload_file:
@@ -318,7 +399,6 @@ if Mode_Selection=='Voice Changer':
         audio_trim,_ = librosa.effects.trim(st.session_state['audio'], top_db=30)
         st.session_state['audio']=audio_trim
     #play audio
-
         with selsect_col:
            st.audio(upload_file, format='audio/wav')
         # draw on time domain 
