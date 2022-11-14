@@ -129,14 +129,29 @@ def animation2(original_df):
 
 def dynamic_plot(line_plot, original_df, modified_df):
     N = len(original_df)
+    j=0
     for i in range(0, N):
-        step_df = original_df.iloc[i:(i+1)*1000]
-        mod_step_df = modified_df.iloc[i:(i+1)*1000]
+        step_df = original_df.iloc[i:(i+1)*round((0.05*N))]
+        mod_step_df = modified_df.iloc[i:(i+1)*round((0.05*N))]
         lines = animation(step_df)
         mod_lines = animation2(mod_step_df)
         concat = alt.hconcat(lines, mod_lines)
         line_plot = line_plot.altair_chart(concat)
-        ti.sleep(.05)
+        ti.sleep(.2)
+        j+=round((0.05*N))
+        if j>N:
+            break
+
+def plotFunc(t,amplitude,amplitude_inv):
+    original_df = pd.DataFrame(
+                {'time': t, 'amplitude': amplitude}, columns=['time', 'amplitude'])
+    modified_df = pd.DataFrame(
+                {'time': t, 'amplitude': amplitude_inv}, columns=['time', 'amplitude'])
+    lines = altair_plot(original_df, modified_df)
+        
+    line_plot = st.altair_chart(lines)
+
+    dynamic_plot(line_plot, original_df, modified_df)
 
 def slider_group(groups): 
     adjusted_data = []
@@ -318,19 +333,10 @@ if Mode_Selection=='Vowels' or Mode_Selection=='Musical Instruments' :
                 st.audio(result_bytes, format='audio/wav')
            with graph:
         #     zoom_fuc(t,st.session_state['audio'],st.session_state['spectrum_inv'])
-        
-            original_df = pd.DataFrame(
-                {'time': t, 'amplitude': st.session_state['audio']}, columns=['time', 'amplitude'])
-            modified_df = pd.DataFrame(
-                {'time': t, 'amplitude': st.session_state['spectrum_inv']}, columns=['time', 'amplitude'])
-            lines = altair_plot(original_df, modified_df)
-            # st.write(lines)
-            line_plot = st.altair_chart(lines)
+            # play = st.button('Play')
+            # if play:
+            plotFunc(t, st.session_state['audio'], st.session_state['spectrum_inv'])
 
-            play = st.button('Play')
-
-            if play:
-                dynamic_plot(line_plot, original_df, modified_df)
 
 
 
@@ -368,7 +374,8 @@ if Mode_Selection=='Uniform Range':
         go.Heatmap(x = fft_frequency, y= spectrum))
         spectrum_inv =inverse(spectrum, fft_phase)
         with graph:
-            zoom_fuc(time,st.session_state['Uniform_Range_Default'],spectrum_inv)
+            # zoom_fuc(time,st.session_state['Uniform_Range_Default'],spectrum_inv)
+            plotFunc(time, st.session_state['Uniform_Range_Default'], spectrum_inv)
 
 
 if Mode_Selection=='ECG Abnormalities':
@@ -387,7 +394,8 @@ if Mode_Selection=='ECG Abnormalities':
            signal_phase=np.angle(signal)
            st.session_state['spectrum_inv']=inverse(st.session_state['spectrum'],signal_phase) 
            with graph:
-            zoom_fuc(Time,st.session_state['ECG'],st.session_state['spectrum_inv'])
+            # zoom_fuc(Time,st.session_state['ECG'],st.session_state['spectrum_inv'])
+            plotFunc(Time, st.session_state['ECG'], st.session_state['spectrum_inv'])
     
 if Mode_Selection=='Voice Changer':
     st.session_state['groups'] = [(-20,20,0,ranges['e'],'')]
@@ -415,7 +423,8 @@ if Mode_Selection=='Voice Changer':
          st.audio(result_bytes, format='audio/wav')
         
         with graph:
-         zoom_fuc(t,st.session_state['audio'],st.session_state['spectrum_inv'])
+        #  zoom_fuc(t,st.session_state['audio'],st.session_state['spectrum_inv'])
+         plotFunc(t, st.session_state['audio'], st.session_state['spectrum_inv'])
     
 
 
