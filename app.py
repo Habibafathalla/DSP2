@@ -137,7 +137,7 @@ def dynamic_plot(line_plot, original_df, modified_df):
         mod_lines = animation2(mod_step_df)
         concat = alt.hconcat(lines, mod_lines)
         line_plot = line_plot.altair_chart(concat)
-        ti.sleep(.2)
+        ti.sleep(.15)
         j+=round((0.05*N))
         if j>N:
             break
@@ -356,7 +356,10 @@ if Mode_Selection=='Uniform Range':
            upload_file= st.file_uploader("Upload your File",type='csv')
         
         if upload_file:
-            st.session_state['Uniform_Range_Default'] = pd.read_csv(upload_file)
+            csv_data = pd.read_csv(upload_file)
+            csv_data=csv_data.to_numpy()
+            time=csv_data[:,0]
+            st.session_state['Uniform_Range_Default']=csv_data[:,1]
         else:
             st.session_state['Uniform_Range_Default']=4*np.sin(2*np.pi*2*time)
 
