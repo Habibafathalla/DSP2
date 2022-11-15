@@ -18,20 +18,23 @@ import plotly.graph_objects as go
 
 
 class Functions():
-    def  mode_1_ranges(sample_rate):
-        fMax = sample_rate//2
-        list_of_range = np.arange(0,fMax,fMax/11)
-        list_of_lists =[]
-        for i in range(len(list_of_range)-1):
-            small_list=[list_of_range[i],list_of_range[i+1]]
-            list_of_lists.append(small_list)
-        return list_of_lists
+    def frequencyFunction(values, amplitude_axis_list):
+        flist =[]
+        for i in range(0, 10):
+                flist.append(amplitude_axis_list[i] * (1+values[i]))
+                
+        flat_list =[]
+        for sublist in flist:
+                for item in sublist:
+                    flat_list.append(item)
+
+        return flat_list
     def final_func(fou_of_signal,frequencies,list_of_freqs,list_of_sliders):
         final_fou = fou_of_signal
         for iter in range(len(list_of_sliders)):
             freqs_update = Functions.select_range(frequencies,list_of_freqs[iter][0],list_of_freqs[iter][1],True)
             final_fou = Functions.modify_magnitude(freqs_update,fou_of_signal,list_of_sliders[iter])
-        return final_fou
+            return final_fou
     def read_ecg_file(file_path):
         signal = loadmat(file_path)
         signal = signal['val'][0]
@@ -115,96 +118,7 @@ class Functions():
 
 
 
-    # def altair_plot(original_df, modified_df):
-    #     lines = alt.Chart(original_df).mark_line().encode(
-    #         x=alt.X('0:T', axis=alt.Axis(title='Time')),
-    #         y=alt.Y('1:Q', axis=alt.Axis(title='Amplitude'))
-    #     ).properties(
-    #         width=400,
-    #         height=300
-    #     )
-    #     modified_lines = alt.Chart(modified_df).mark_line().encode(
-    #         x=alt.X('0:T', axis=alt.Axis(title='Time')),
-    #         y=alt.Y('1:Q', axis=alt.Axis(title='Amplitude'))
-    #     ).properties(
-    #         width=400,
-    #         height=300
-    #     ).interactive()
-    #     return lines
 
-
-    # def animation(original_df):
-    #     brush = alt.selection_interval()
-    #     lines = alt.Chart(original_df).mark_line().encode(
-    #         x=alt.X('time', axis=alt.Axis(title='Time')),
-    #         y=alt.Y('amplitude', axis=alt.Axis(title='Amplitude')),
-    #     ).properties(
-    #         width=400,
-    #         height=300
-    #     ).add_selection(
-    #         brush).interactive()
-
-    #     return lines
-
-
-    # def dynamic_plot(line_plot, original_df, modified_df):
-    #     N = len(original_df)
-    #     j=0
-    #     size = 10 
-    #     for i in range(0, N):
-    #         step_df = original_df.iloc[i:(i+1)*round((0.05*N))]
-    #         mod_step_df = modified_df.iloc[i:(i+1)*round((0.05*N))]
-    #         lines = Functions.animation(step_df)
-    #         mod_lines = Functions.animation(mod_step_df)
-    #         concat = alt.hconcat(lines, mod_lines)
-    #         line_plot = line_plot.altair_chart(concat)
-    #         time.sleep(.15)
-    #         j+=round((0.05*N))
-    #         if j>N:
-    #             break
-
-    # def plotFunc(t,amplitude,amplitude_inv,start_btn,resume_btn,pause_btn):
-    #     original_df = pd.DataFrame(
-    #                 {'time': t, 'amplitude': amplitude}, columns=['time', 'amplitude'])
-    #     modified_df = pd.DataFrame(
-    #                 {'time': t, 'amplitude': amplitude_inv}, columns=['time', 'amplitude'])
-    #     lines = Functions.altair_plot(original_df, modified_df)
-            
-    #     line_plot = st.altair_chart(lines)
-    #     line_plot= line_plot.altair_chart(lines)
-
-    #     if start_btn:
-    #         st.session_state.flag = 1
-    #         Functions.dynamic_plot(line_plot, original_df, modified_df)
-    #     elif resume_btn:
-    #         st.session_state.flag = 1
-    #         Functions.dynamic_plot(line_plot, original_df, modified_df)
-
-
-    #     elif pause_btn:
-    #         st.session_state.flag =0
-    #         Functions.dynamic_plot(line_plot, original_df, modified_df)
-
-
-    #     if st.session_state.flag == 1:
-    #         Functions.dynamic_plot(line_plot, original_df, modified_df)
-        # Functions.dynamic_plot(line_plot, original_df, modified_df)
-
-    def slider_group(groups): 
-        adjusted_data = []
-        sliders = {}
-        columns = st.columns(len(groups))
-        for idx, i in enumerate(groups):
-            min_value = i[0]
-            max_value = i[1]
-            key = f'member{str(idx)}'
-            with columns[idx]:
-                sliders[f'slider_group_{key}'] = svs.vertical_slider(key=key, default_value=i[2], step=1, min_value=min_value, max_value=max_value)
-                st.text(i[4])
-                if sliders[f'slider_group_{key}'] == None:
-                    sliders[f'slider_group_{key}']  = i[2]
-                adjusted_data.append((i[3],(sliders[f'slider_group_{key}'] )))
-        return adjusted_data
 
 
     def plot_animation(df):
