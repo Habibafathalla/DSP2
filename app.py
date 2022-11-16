@@ -86,11 +86,11 @@ if 'size1' not in st.session_state:
 if 'flag' not in st.session_state:
     st.session_state['flag'] = 0
 
-selsect_col,graph=st.columns((1,4))
+select_col,graph=st.columns((1,4))
 
 
 
-with selsect_col:
+with select_col:
      Mode_Selection=st.selectbox(
      'Equalizer',
      ('Uniform Range', 'Vowels', 'Musical Instruments','Voice Changer'))
@@ -104,6 +104,7 @@ with selsect_col:
 
 if Mode_Selection=='Uniform Range' :
     sliders_number = 10
+    text=["1st","2nd","3rd","4th","5th","6th","7th","8th","9th","10th"]
     flag=1
 if Mode_Selection=='Musical Instruments' :
     sliders_number = 3
@@ -111,7 +112,8 @@ if Mode_Selection=='Musical Instruments' :
     lst_Drums=[0,500]
     lst_flute =[800,1500]
     lst_Xy=[500,800]
-    lst_final=[lst_Drums,lst_flute,lst_Xy]
+    lst_final_music=[lst_Drums,lst_flute,lst_Xy]
+    text=["Drums","Flute","Xy"]
 
     flag=1
       
@@ -123,84 +125,87 @@ if Mode_Selection=='Vowels' :
     lst_a=[0,2656]
     lst_e=[0,501]
     lst_final=[lst_o,lst_z,lst_a,lst_e]
+    text=["A","C","M"]
 
     flag=1
 
 if Mode_Selection=='Voice Changer' :
-    sliders_number = 1  
+    sliders_number = 1 
+    flag= 1
+    text=["Female to male"]
       
+with select_col:
+        upload_file= st.file_uploader("Upload your File",type='wav')
+if not upload_file:
+    st.session_state['audio'],st.session_state['sampleRare']=librosa.load("audio\hello-female-friendly-professional.wav")
+else:
+    st.session_state['audio'],st.session_state['sampleRare']= librosa.load(upload_file)
 if  flag==1:
-    with selsect_col:
-            upload_file= st.file_uploader("Upload your File",type='wav')
-    
-    if upload_file:
-
-            st.session_state['audio'],st.session_state['sampleRare']= librosa.load(upload_file)
-            audio_trim,_ = librosa.effects.trim(st.session_state['audio'], top_db=30)
-            start_btn  =button("▷")
-            pause_btn  =button(label='Pause')
-            resume_btn =button(label='resume')
-            st.session_state['audio']=audio_trim
-
-        #play audio
-            st.audio(upload_file, format='audio/wav')
-        # transform to fourier 
-            list_freq_domain,frequncies, magnitude,phase, number_samples = Functions.fourier_transformation(st.session_state['audio'], st.session_state['sampleRare'])
-            freq_axis_list, amplitude_axis_list,bin_max_frequency_value = Functions.bins_separation(frequncies, magnitude, sliders_number)
-            valueSlider = Functions.Sliders_generation(sliders_number)
-            if Mode_Selection=="Uniform Range":
-               Modified_signal=Functions.frequencyFunction(valueSlider, amplitude_axis_list) 
-            elif Mode_Selection=="Vowels" or "Musical Instruments" :
-               Modified_signal=Functions.final_func(list_freq_domain,frequncies,lst_final,valueSlider)
-            else:
-                 Modified_signal=magnitude
-            st.session_state['fft_frequency']= np.abs(fft.rfftfreq(len(st.session_state['audio']),1/st.session_state['sampleRare']))
-            fig_trans=px.line(x=st.session_state['fft_frequency'], y=st.session_state['spectrum']).update_layout(yaxis_title='Amp',xaxis_title='HZ')
-            fig_spect =go.Figure(data =
-            go.Heatmap(x = st.session_state['fft_frequency'], y= st.session_state['spectrum']))
-            if Mode_Selection=="Uniform Range":
-                  st.session_state['spectrum_inv']=Functions.inverse(Modified_signal,phase) 
-            else:
-                  st.session_state['spectrum_inv']=np.fft.irfft(Modified_signal) 
-            #convert to audio
-            result_bytes = Functions.convertToAudio(st.session_state['sampleRare'], st.session_state['spectrum_inv'])
-            with selsect_col:
-                st.audio(result_bytes, format='audio/wav')
-            with graph:
-                Functions.plotShow(st.session_state['audio'], st.session_state['spectrum_inv'], start_btn,pause_btn,resume_btn,valueSlider,st.session_state['sampleRare'])
-                #ranges
-                # fig_2= px.line(x=st.session_state['fft_frequency'], y=Modified_signal)
-                # st.plotly_chart(fig_2,use_container_width=True)
-
-
-
-
-    if Mode_Selection=='Voice Changer':
-        with selsect_col:
-            upload_file= st.file_uploader("Upload your File",type='wav')
+    audio_trim,_ = librosa.effects.trim(st.session_state['audio'], top_db=30)
+    st.session_state['audio']=audio_trim
+    #play audio
+    with select_col:
         if upload_file:
+            st.audio(upload_file, format='audio/wav')
+        else:
+            input_bytes=Functions.convertToAudio(st.session_state['sampleRare'],st.session_state['audio'])
+            st.audio(input_bytes, format='audio/wav')
 
-            st.session_state['audio'],st.session_state['sampleRare']= librosa.load(upload_file)
-            audio_trim,_ = librosa.effects.trim(st.session_state['audio'], top_db=30)
-            st.session_state['audio']=audio_trim
-        #play audio
-            with selsect_col:
-             st.audio(upload_file, format='audio/wav')
-            # draw on time domain 
-            t=np.array(range(0,len(st.session_state['audio'])))/st.session_state['sampleRare']
-            # fig_trans=px.line(x=st.session_state['fft_frequency'], y=st.session_state['spectrum']).update_layout(yaxis_title='Amp',xaxis_title='HZ')
-            fig_spect =go.Figure(data =
-            go.Heatmap(x = st.session_state['fft_frequency'], y= st.session_state['spectrum']))
-            st.session_state['spectrum_inv']= librosa.effects.pitch_shift(st.session_state['audio'] , sr= st.session_state['sampleRare'] , n_steps=st.session_state['sliderValues'][0][1])
+    with graph:    
+        start_btn  =button("▷")
+        pause_btn  =button(label='Pause')
+        resume_btn =button(label='Resume')
 
-            #convert to audio
-            result_bytes = Functions.convertToAudio(st.session_state['sampleRare'], st.session_state['spectrum_inv'])
     
-            with selsect_col:
-             st.audio(result_bytes, format='audio/wav')
-            
-            with graph:
-                  Functions.plotFunc(t, st.session_state['audio'], st.session_state['spectrum_inv'])
+    # transform to fourier 
+    list_freq_domain,frequencies, magnitude,phase, number_samples = Functions.fourier_transformation(st.session_state['audio'], st.session_state['sampleRare'])
+    freq_axis_list, amplitude_axis_list,bin_max_frequency_value = Functions.bins_separation(frequencies, magnitude, sliders_number)
+    valueSlider = Functions.Sliders_generation(sliders_number,text)
+    value=valueSlider[0]
+    if Mode_Selection=="Voice Changer":
+       st.session_state['spectrum_inv']= librosa.effects.pitch_shift(st.session_state['audio'] , sr= st.session_state['sampleRare'] , n_steps=value)
+       
+        #convert to audio
+    
+       result_bytes = Functions.convertToAudio(st.session_state['sampleRare'], st.session_state['spectrum_inv'])
+       with select_col:
+          st.audio(result_bytes, format='audio/wav')
+    
+       with graph:
+          Functions.plotShow(st.session_state['audio'], st.session_state['spectrum_inv'], start_btn,pause_btn,resume_btn,valueSlider,st.session_state['sampleRare'])
+        #   Functions.plotShow(Time, st.session_state['audio'], st.session_state['spectrum_inv'])
+    else:  
+        if Mode_Selection=="Uniform Range":
+          Modified_signal=Functions.frequencyFunction(valueSlider, amplitude_axis_list) 
+        elif Mode_Selection=="Vowels" :
+          Modified_signal=Functions.final_func(list_freq_domain,frequencies,lst_final,valueSlider)
+        elif Mode_Selection=="Musical Instruments":
+          Modified_signal=Functions.final_func(list_freq_domain,frequencies,lst_final_music,valueSlider)
+
+        else:
+            Modified_signal=magnitude
+
+        st.session_state['fft_frequency']= np.abs(fft.rfftfreq(len(st.session_state['audio']),1/st.session_state['sampleRare']))
+        fig_trans=px.line(x=st.session_state['fft_frequency'], y=st.session_state['spectrum']).update_layout(yaxis_title='Amp',xaxis_title='HZ')
+        if Mode_Selection=="Uniform Range":
+            st.session_state['spectrum_inv']=Functions.inverse(Modified_signal,phase) 
+        elif Mode_Selection== "Vowels" or" Musical Instruments":
+            st.session_state['spectrum_inv']=np.fft.irfft(Modified_signal)
+
+        elif Mode_Selection=="Voice Changer":
+            flag==1
+            st.session_state['spectrum_inv']=librosa.effects.pitch_shift(st.session_state['audio'] , sr= st.session_state['sampleRare'] , n_steps=valueSlider)
+        # else:
+        #     st.session_state['spectrum_inv']=np.fft.irfft(Modified_signal) 
+        #convert to audio
+        result_bytes = Functions.convertToAudio(st.session_state['sampleRare'], st.session_state['spectrum_inv'])
+        with graph:
+            Functions.plotShow(st.session_state['audio'], st.session_state['spectrum_inv'], start_btn,pause_btn,resume_btn,valueSlider,st.session_state['sampleRare'])
+            #ranges
+            # fig_2= px.line(x=st.session_state['fft_frequency'], y=Modified_signal)
+            # st.plotly_chart(fig_2,use_container_width=True)
+        with select_col:
+            st.audio(result_bytes, format='audio/wav')
     
 
            

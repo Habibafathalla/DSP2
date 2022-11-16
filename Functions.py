@@ -21,7 +21,7 @@ class Functions():
     def frequencyFunction(values, amplitude_axis_list):
         flist =[]
         for i in range(0, 10):
-                flist.append(amplitude_axis_list[i] * (1+values[i]))
+                flist.append(amplitude_axis_list[i] * (1+(values[i]/20)))
                 
         flat_list =[]
         for sublist in flist:
@@ -34,25 +34,26 @@ class Functions():
         for iter in range(len(list_of_sliders)):
             freqs_update = Functions.select_range(frequencies,list_of_freqs[iter][0],list_of_freqs[iter][1],True)
             final_fou = Functions.modify_magnitude(freqs_update,fou_of_signal,list_of_sliders[iter])
-            return final_fou
+        return final_fou
     def read_ecg_file(file_path):
         signal = loadmat(file_path)
         signal = signal['val'][0]
         return signal
     def modify_magnitude(freq_list,list_freq_domain,factor):
-        list_freq_domain[freq_list] = list_freq_domain[freq_list] * (factor+1)
+        if factor!=0:
+            list_freq_domain[freq_list] = list_freq_domain[freq_list] * ((factor/20)+1)
         return list_freq_domain
     def fourier_transformation(time_domain_data, sampling_rate):
-        frequncies = np.fft.rfftfreq(len(time_domain_data), 1/sampling_rate)
+        frequencies = np.fft.rfftfreq(len(time_domain_data), 1/sampling_rate)
         freq_domain_data = np.fft.rfft(time_domain_data)
         phase = np.angle(freq_domain_data)
         magnitude = np.abs(freq_domain_data)
-        return freq_domain_data, frequncies, magnitude, phase, len(time_domain_data)
-    def select_range(frequncies,min,max,equal):
+        return freq_domain_data, frequencies, magnitude, phase, len(time_domain_data)
+    def select_range(frequencies,min,max,equal):
         if equal:
-            selected_freqs = (frequncies>=min)&(frequncies<=max)
+            selected_freqs = (frequencies>=min)&(frequencies<=max)
         else:
-            selected_freqs = (frequncies>min)&(frequncies<max)
+            selected_freqs = (frequencies>min)&(frequencies<max)
         return 
 
     def bins_separation(frequency, amplitude,sliders_number):
@@ -66,12 +67,13 @@ class Functions():
 
         return freq_list, amplitude_list,bin_max_frequency_value
 
-    def Sliders_generation( sliders_number):
+    def Sliders_generation( sliders_number,text):
             columns = st.columns(sliders_number)
             values = []
             for i in range(0, sliders_number):
                 with columns[i]:
-                    value = svs.vertical_slider( key= i, default_value=0.0, step=0.1, min_value=-1.0, max_value=1.0)
+                    value = svs.vertical_slider( key= i, default_value=0, step=1, min_value=-20, max_value=20)
+                    st.text(text[i])
                     if value == None:
                         value = 0.0
                     values.append(value)
@@ -145,9 +147,9 @@ class Functions():
         if time1>1:
             time1 = int(time1)
         time1 = np.linspace(0,time1,len(data))   
-        df = pd.DataFrame({'time': time1[::300], 
-                            'amplitude': data[:: 300],
-                            'amplitude after processing': idata[::300]}, columns=[
+        df = pd.DataFrame({'time': time1[::30], 
+                            'amplitude': data[:: 30],
+                            'amplitude after processing': idata[::30]}, columns=[
                             'time', 'amplitude','amplitude after processing'])
         N = df.shape[0]  # number of elements in the dataframe
         burst = 10      # number of elements (months) to add to the plot
