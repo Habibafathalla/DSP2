@@ -151,9 +151,13 @@ if  flag==1:
             input_bytes=Functions.convertToAudio(st.session_state['sampleRare'],st.session_state['audio'])
             st.audio(input_bytes, format='audio/wav')
 
-    with graph:    
-        start_btn  =button("▷")
+    
+    c0,c1,c2,c3,c4,c5,c6=st.columns((1,2,3,4,5,6,7),gap="small")
+    with c4:   
+        start_btn  =button("Play")
+    with c5: 
         pause_btn  =button(label='Pause')
+    with c6: 
         resume_btn =button(label='Resume')
 
     
