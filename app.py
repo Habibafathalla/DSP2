@@ -109,23 +109,23 @@ if Mode_Selection=='Uniform Range' :
 if Mode_Selection=='Musical Instruments' :
     sliders_number = 3
 
-    lst_Drums=[0,500]
-    lst_flute =[800,1500]
-    lst_Xy=[500,800]
+    lst_Drums=[(0,500)]
+    lst_flute =[(800,1500)]
+    lst_Xy=[(500,800)]
     lst_final_music=[lst_Drums,lst_flute,lst_Xy]
     text=["Drums","Flute","Xy"]
 
     flag=1
       
 if Mode_Selection=='Vowels' :
-    sliders_number = 3
+    sliders_number = 4
 
-    lst_z=[0,2400]
-    lst_o=[0,890]
-    lst_a=[0,2656]
-    lst_e=[0,501]
+    lst_z=[(0,2400)]
+    lst_o=[(0,890)]
+    lst_a=[(0,2656)]
+    lst_e=[(82,182),(214,314),(2039,2639),(3156,3756)]
     lst_final=[lst_o,lst_z,lst_a,lst_e]
-    text=["A","C","M"]
+    text=["A","C","M","E"]
 
     flag=1
 
@@ -158,7 +158,7 @@ if  flag==1:
 
     
     # transform to fourier 
-    list_freq_domain,frequencies, magnitude,phase, number_samples = Functions.fourier_transformation(st.session_state['audio'], st.session_state['sampleRare'])
+    spectrum,frequencies, magnitude,phase, number_samples = Functions.fourier_transformation(st.session_state['audio'], st.session_state['sampleRare'])
     freq_axis_list, amplitude_axis_list,bin_max_frequency_value = Functions.bins_separation(frequencies, magnitude, sliders_number)
     valueSlider = Functions.Sliders_generation(sliders_number,text)
     value=valueSlider[0]
@@ -178,9 +178,9 @@ if  flag==1:
         if Mode_Selection=="Uniform Range":
           Modified_signal=Functions.frequencyFunction(valueSlider, amplitude_axis_list) 
         elif Mode_Selection=="Vowels" :
-          Modified_signal=Functions.final_func(list_freq_domain,frequencies,lst_final,valueSlider)
+          Modified_signal=Functions.modify_magnitude(spectrum,frequencies,lst_final,valueSlider)
         elif Mode_Selection=="Musical Instruments":
-          Modified_signal=Functions.final_func(list_freq_domain,frequencies,lst_final_music,valueSlider)
+          Modified_signal=Functions.modify_magnitude(spectrum,frequencies,lst_final_music,valueSlider)
 
         else:
             Modified_signal=magnitude

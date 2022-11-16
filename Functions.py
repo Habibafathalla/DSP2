@@ -29,20 +29,19 @@ class Functions():
                     flat_list.append(item)
 
         return flat_list
-    def final_func(fou_of_signal,frequencies,list_of_freqs,list_of_sliders):
-        final_fou = fou_of_signal
-        for iter in range(len(list_of_sliders)):
-            freqs_update = Functions.select_range(frequencies,list_of_freqs[iter][0],list_of_freqs[iter][1],True)
-            final_fou = Functions.modify_magnitude(freqs_update,fou_of_signal,list_of_sliders[iter])
-        return final_fou
-    def read_ecg_file(file_path):
-        signal = loadmat(file_path)
-        signal = signal['val'][0]
-        return signal
-    def modify_magnitude(freq_list,list_freq_domain,factor):
-        if factor!=0:
-            list_freq_domain[freq_list] = list_freq_domain[freq_list] * ((factor/20)+1)
-        return list_freq_domain
+    # def final_func(fou_of_signal,frequencies,list_of_freqs,list_of_sliders):
+    #     final_fou = fou_of_signal
+    #     final_fou = Functions.modify_magnitude(fou_of_signal,frequencies,list_of_freqs,list_of_sliders)
+    #         # freqs_update = Functions.select_range(frequencies,list_of_freqs[iter][0],list_of_freqs[iter][1],True)
+        
+    #     return final_fou
+    def modify_magnitude(spectrum,frequencies,freq_list,factors):
+        cutoff=spectrum.copy()
+        W=frequencies
+        for i in range(len(factors)):
+            for r in freq_list[i]:
+                cutoff[(W<r[1]) & (W>r[0])] *= 10**(int(factors[i])*np.hanning(len(cutoff[(W>r[0])&(W<r[1])]))/20)
+        return  cutoff
     def fourier_transformation(time_domain_data, sampling_rate):
         frequencies = np.fft.rfftfreq(len(time_domain_data), 1/sampling_rate)
         freq_domain_data = np.fft.rfft(time_domain_data)
