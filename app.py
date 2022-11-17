@@ -94,26 +94,25 @@ with select_col:
      Mode_Selection=st.selectbox(
      'Equalizer',
      ('Uniform Range', 'Vowels', 'Musical Instruments','Voice Changer'))
-     spec_visibality=st.radio(
-     "Spectogram",
-     ('Hide', 'Show'))
-     if spec_visibality=='Show':
+     spec_visibality=st.checkbox("Spectrogram")
+     if spec_visibality:
         Functions.plotSpectrogram(st.session_state['audio'],st.session_state['sampleRare'],'Input')
         Functions.plotSpectrogram(st.session_state['spectrum_inv'],st.session_state['sampleRare'],'Output')
 
 
 if Mode_Selection=='Uniform Range' :
     sliders_number = 10
+    lst_final=[]
     text=["1st","2nd","3rd","4th","5th","6th","7th","8th","9th","10th"]
     flag=1
 if Mode_Selection=='Musical Instruments' :
     sliders_number = 3
 
-    lst_Drums=[(0,500)]
-    lst_flute =[(800,1500)]
-    lst_Xy=[(500,800)]
+    lst_Drums=[(0,600)]
+    lst_flute =[(700,1600)]
+    lst_Xy=[(400,900)]
     lst_final_music=[lst_Drums,lst_flute,lst_Xy]
-    text=["Drums","Flute","Xy"]
+    text=["Drums","Flute","Xylophone"]
 
     flag=1
       
@@ -177,7 +176,7 @@ if  flag==1:
     
        with graph:
           Functions.plotShow(st.session_state['audio'], st.session_state['spectrum_inv'], start_btn,pause_btn,resume_btn,valueSlider,st.session_state['sampleRare'])
-        #   Functions.plotShow(Time, st.session_state['audio'], st.session_state['spectrum_inv'])
+        
     else:  
         if Mode_Selection=="Uniform Range":
           Modified_signal=Functions.frequencyFunction(valueSlider, amplitude_axis_list) 
@@ -188,19 +187,19 @@ if  flag==1:
 
         else:
             Modified_signal=magnitude
-
-        st.session_state['fft_frequency']= np.abs(fft.rfftfreq(len(st.session_state['audio']),1/st.session_state['sampleRare']))
-        fig_trans=px.line(x=st.session_state['fft_frequency'], y=st.session_state['spectrum']).update_layout(yaxis_title='Amp',xaxis_title='HZ')
+        # fig_trans=px.line(x=frequencies, y=abs(Modified_signal)).update_layout(yaxis_title='Amp',xaxis_title='HZ')
+        # st.plotly_chart(fig_trans)
         if Mode_Selection=="Uniform Range":
             st.session_state['spectrum_inv']=Functions.inverse(Modified_signal,phase) 
         elif Mode_Selection== "Vowels" or" Musical Instruments":
             st.session_state['spectrum_inv']=np.fft.irfft(Modified_signal)
+        # if Mode_Selection=="Uniform Range"or"Vowels" or" Musical Instruments":
+        #     st.session_state['spectrum_inv']=np.fft.irfft(Modified_signal)
 
-        elif Mode_Selection=="Voice Changer":
-            flag==1
-            st.session_state['spectrum_inv']=librosa.effects.pitch_shift(st.session_state['audio'] , sr= st.session_state['sampleRare'] , n_steps=valueSlider)
-        # else:
-        #     st.session_state['spectrum_inv']=np.fft.irfft(Modified_signal) 
+        # elif Mode_Selection=="Voice Changer":
+        #     flag==1
+        #     st.session_state['spectrum_inv']=librosa.effects.pitch_shift(st.session_state['audio'] , sr= st.session_state['sampleRare'] , n_steps=valueSlider)
+    
         #convert to audio
         result_bytes = Functions.convertToAudio(st.session_state['sampleRare'], st.session_state['spectrum_inv'])
         with graph:
