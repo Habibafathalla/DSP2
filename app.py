@@ -151,7 +151,7 @@ if Mode_Selection=='Vowels' :
     # lst_h=[(103,183),(246,326),(401,481),(500,660),(687,767),(840,900)]
     lst_h=[(103,183),(183,985),(1000,1888),(100,472)]
     lst_e=[(82,182),(214,314),(2039,2639),(3156,3756)]
-    lst_final=[lst_o,lst_z,lst_h,lst_e]
+    lst_final=[lst_o,lst_o,lst_h,lst_e]
     text=["A","C","H","E"]
 
     flag=1
@@ -181,11 +181,8 @@ if  flag==1:
     
     c0,c1,c2,c3,c4,c5,c6=st.columns((1,2,3,4,5,6,7),gap="small")
     with c4:   
-        start_btn  =button("Play")
-    with c5: 
-        pause_btn  =button(label='Pause')
-    with c6: 
-        resume_btn =button(label='Resume')
+          resume= st.button('Play/Pause')
+   
 
     
     # transform to fourier 
@@ -206,7 +203,9 @@ if  flag==1:
           st.audio(result_bytes, format='audio/wav')
     
        with graph:
-          Functions.plotShow(st.session_state['audio'], st.session_state['spectrum_inv'], start_btn,pause_btn,resume_btn,valueSlider,st.session_state['sampleRare'])
+    #     resume= st.button('Play/Pause')
+    # plotShow(original_signal[:len(updated_signal)],updated_signal,resume,sample_rate )
+          Functions.plotShow(st.session_state['audio'], st.session_state['spectrum_inv'], resume,valueSlider,st.session_state['sampleRare'])
         
     else:  
         if Mode_Selection=="Uniform Range":
@@ -236,7 +235,7 @@ if  flag==1:
         #convert to audio
         result_bytes = Functions.convertToAudio(st.session_state['sampleRare'], st.session_state['spectrum_inv'])
         with graph:
-            Functions.plotShow(st.session_state['audio'], st.session_state['spectrum_inv'], start_btn,pause_btn,resume_btn,valueSlider,st.session_state['sampleRare'])
+            Functions.plotShow(st.session_state['audio'], st.session_state['spectrum_inv'], resume,st.session_state['sampleRare'])
             #ranges
             # fig_2= px.line(x=st.session_state['fft_frequency'], y=Modified_signal)
             # st.plotly_chart(fig_2,use_container_width=True)
