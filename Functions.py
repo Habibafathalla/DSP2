@@ -17,6 +17,7 @@ import plotly.graph_objects as go
 
 
 
+
 class Functions():
     def frequencyFunction(values, amplitude_axis_list):
         flist =[]
@@ -169,24 +170,22 @@ class Functions():
         size = burst    #   size of the current dataset
         if start_btn:
             st.session_state.flag = 1
-            for i in range(1, N):
+            for i in range(1, N-burst):
                 st.session_state.start=i
-                step_df = df.iloc[0:size]
+                step_df = df.iloc[i:size+i]
                 lines = Functions.plot_animation(step_df)
                 line_plot = line_plot.altair_chart(lines)
                 size = i + burst 
-                st.session_state.size1 = size
                 time.sleep(.1)
 
         elif resume_btn: 
                 st.session_state.flag = 1
                 for i in range( st.session_state.start,N):
                     st.session_state.start =i 
-                    step_df = df.iloc[0:size]
+                    step_df = df.iloc[i:size+i]
                     lines = Functions.plot_animation(step_df)
                     line_plot = line_plot.altair_chart(lines)
                     st.session_state.size1 = size
-                    size = i + burst
                     time.sleep(.1)
 
         elif pause_btn:
@@ -200,9 +199,41 @@ class Functions():
         if st.session_state.flag == 1:
             for i in range( st.session_state.start,N):
                     st.session_state.start =i 
-                    step_df = df.iloc[0:size]
+                    step_df = df.iloc[i:size+i]
                     lines = Functions.plot_animation(step_df)
                     line_plot = line_plot.altair_chart(lines)
                     st.session_state.size1 = size
-                    size = i + burst
                     time.sleep(.1)
+
+def time_stretch(y,rate):
+
+    if rate <= 0:
+        raise ParameterError("rate must be a positive number")
+    stft = core.stft(y)
+    stft_stretch = core.phase_vocoder(
+        stft,
+        rate=rate,
+        hop_length=kwargs.get("hop_length", None),
+        n_fft=kwargs.get("n_fft", None),
+    )
+
+    len_stretch = int(round(y.shape[-1] / rate))
+    y_stretch = core.istft(stft_stretch, dtype=y.dtype, length=len_stretch, **kwargs)
+
+    return y_stretch
+
+def pitch_shift(y, sr, n_steps):
+    
+    if not util.is_positive_int(bins_per_octave):
+        raise ParameterError(f"bins_per_octave={bins_per_octave} must be a positive integer.")
+
+    rate = 2.0 ** (-float(n_steps) / bins_per_octave)
+
+    # Stretch in time, then resample
+    y_shift = core.resample(
+        time_stretch(y, rate=rate, **kwargs),
+        orig_sr=float(sr) / rate,
+        target_sr=sr,
+        res_type=res_type,
+    )
+    return util.fix_length(y_shift, size=y.shape[-1])
